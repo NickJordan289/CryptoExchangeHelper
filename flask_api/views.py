@@ -1,4 +1,6 @@
 #!flask/bin/python
+import os
+
 from flask import jsonify, abort, make_response, request, url_for, render_template, flash, redirect
 from flask import request
 from sqlalchemy import update
@@ -10,7 +12,18 @@ from pprint import pprint
 # package stuff
 from flask_api.forms import *
 #from flask_api.models import users
-from flask_api import app, db
+from flask_api import app, db, mail
+
+from flask_emails import Message
+
+import requests
+
+
+token = os.getenv("TOKEN")
+head = {
+    'Authorization': f'Token token="{token}"'
+}
+
 
 ####################
 #   Error Pages    #
@@ -31,6 +44,15 @@ def unauthorised_access(error):
     # 401 makes a login popup, 403 doesn't
     return make_response(jsonify({'error': 'Unauthorised access'}), 401)
 
+###################
+# GET
+def getLastPrice():
+  ticker_url = f'https://api.exchange.coinjar.com/products/XRPAUD/ticker'
+  req = requests.get(ticker_url, headers=head)
+  ticker = req.json()
+  return float(ticker['last'])
+
+
 ####################
 #      Routes      #
 ####################
@@ -39,6 +61,28 @@ def unauthorised_access(error):
 @app.route('/', methods=['GET'])
 def index():
     return render_template('home.html', title='Home')
+
+# check
+@app.route('/check', methods=['GET'])
+def check():
+    last = getLastPrice()
+    message = Message(config=mail, html=f'<html><p>{last}</p></html>',
+                    subject=f"Daily Update - ${last}",
+                    mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
+
+    r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+    return jsonify({'last':last})
+
+@app.route('/check_2', methods=['GET'])
+def check2():
+    last = getLastPrice()
+    message = Message(config=mail, html=f'<html><p>{last}</p></html>',
+                    subject=f"Price Warning - ${last}",
+                    mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
+
+    if(last >= 0.345):
+        r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+    return jsonify({'last':last})
 
 # All Tasks
 @app.route('/todo/api/v1/tasks', methods=['GET'])
