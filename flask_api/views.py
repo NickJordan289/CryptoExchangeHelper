@@ -17,13 +17,14 @@ from flask_api import app, db, mail
 from flask_emails import Message
 
 import requests
-
+from time import time as gettime
 
 token = os.getenv("TOKEN")
 head = {
     'Authorization': f'Token token="{token}"'
 }
 
+EMAIL_COOLDOWN = 10*60 # 10 minutes
 
 ####################
 #   Error Pages    #
@@ -52,6 +53,17 @@ def getLastPrice():
   ticker = req.json()
   return float(ticker['last'])
 
+def getLastEmail():
+    try:
+        with open('time.txt','r') as file:
+            return float(file.read())
+    except Exception as e:
+        return 0
+
+def updateLastEmailTime():
+    with open('time.txt','w') as file:
+        file.write(str(gettime()))
+
 
 ####################
 #      Routes      #
@@ -66,22 +78,28 @@ def index():
 @app.route('/check', methods=['GET'])
 def check():
     last = getLastPrice()
-    message = Message(config=mail, html=f'<html><p>{last}</p></html>',
-                    subject=f"Daily Update - ${last}",
-                    mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
+    last_email = getLastEmail()
+    if(last_email > EMAIL_COOLDOWN):
+        message = Message(config=mail, html=f'<html><p>{last}</p></html>',
+                        subject=f"Daily Update - ${last}",
+                        mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
 
-    r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+        r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+        updateLastEmailTime()
     return jsonify({'last':last})
 
 @app.route('/check_2', methods=['GET'])
 def check2():
     last = getLastPrice()
-    message = Message(config=mail, html=f'<html><p>{last}</p></html>',
-                    subject=f"Price Warning - ${last}",
-                    mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
+    last_email = getLastEmail()
+    if(last_email > EMAIL_COOLDOWN):
+        message = Message(config=mail, html=f'<html><p>{last}</p></html>',
+                        subject=f"Price Warning - ${last}",
+                        mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
 
-    if(last >= 0.345):
-        r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+        if(last >= 0.345):
+            r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+            updateLastEmailTime()
     return jsonify({'last':last})
 
 # All Tasks
