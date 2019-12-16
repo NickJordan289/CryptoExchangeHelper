@@ -88,7 +88,7 @@ def check():
 def check2():
     last = getLastPrice()
     email_pass = request.args.get('pass')
-    LIM = request.args.get('lim')
+    LIM = float(request.args.get('lim'))
     if email_pass:
         config_copy = mail_config
         config_copy['EMAIL_HOST_PASSWORD'] = email_pass
