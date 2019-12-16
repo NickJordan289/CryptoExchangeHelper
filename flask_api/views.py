@@ -80,7 +80,7 @@ def check2():
                     subject=f"Price Warning - ${last}",
                     mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
 
-    if(last >= 0.345):
+    if(float(last) >= float(0.345)): # forcing floats because it was giving off an error
         r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
     return jsonify({'last':last})
 
