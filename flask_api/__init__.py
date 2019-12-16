@@ -15,12 +15,18 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app) 
 
+#mail_config = {'EMAIL_HOST': 'smtp.gmail.com', 
+#                'EMAIL_PORT': 587, 
+#                'EMAIL_HOST_USER':'testsmtpwagtail@gmail.com',
+#                'EMAIL_HOST_PASSWORD': os.getenv("EMAIL_PASS"),
+#                'EMAIL_USE_TLS':True,
+#                'EMAIL_TIMEOUT': 10}
 mail_config = {'EMAIL_HOST': 'smtp.gmail.com', 
                 'EMAIL_PORT': 587, 
                 'EMAIL_HOST_USER':'testsmtpwagtail@gmail.com',
-                'EMAIL_HOST_PASSWORD': os.getenv("EMAIL_PASS"),
                 'EMAIL_USE_TLS':True,
                 'EMAIL_TIMEOUT': 10}
+
 mail = EmailsConfig(config=mail_config)
 
 

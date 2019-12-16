@@ -12,18 +12,21 @@ from pprint import pprint
 # package stuff
 from flask_api.forms import *
 #from flask_api.models import users
-from flask_api import app, db, mail
+from flask_api import app, db, mail, mail_config
 
 from flask_emails import Message
 
 import requests
+from time import time as gettime
 
+from flask_emails import EmailsConfig
 
 token = os.getenv("TOKEN")
 head = {
     'Authorization': f'Token token="{token}"'
 }
 
+#EMAIL_COOLDOWN = 10*60 # 10 minutes
 
 ####################
 #   Error Pages    #
@@ -52,7 +55,6 @@ def getLastPrice():
   ticker = req.json()
   return float(ticker['last'])
 
-
 ####################
 #      Routes      #
 ####################
@@ -66,25 +68,39 @@ def index():
 @app.route('/check', methods=['GET'])
 def check():
     last = getLastPrice()
-    message = Message(config=mail, html=f'<html><p>{last}</p></html>',
-                    subject=f"Daily Update - ${last}",
-                    mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
+    email_pass = request.args.get('pass')
+    if email_pass:
+        config_copy = mail_config
+        config_copy['EMAIL_HOST_PASSWORD'] = email_pass
+        mail = EmailsConfig(config=config_copy)
 
-    r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+        message = Message(config=mail, html=f'<html><p>{last}</p></html>',
+                        subject=f"Daily Update - ${last}",
+                        mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
+
+        try:
+            r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+        except Exception as e:
+            print("Invalid mail settings")
     return jsonify({'last':last})
 
 @app.route('/check_2', methods=['GET'])
 def check2():
     last = getLastPrice()
-    message = Message(config=mail, html=f'<html><p>{last}</p></html>',
-                    subject=f"Price Warning - ${last}",
-                    mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
+    email_pass = request.args.get('pass')
+    LIM = request.args.get('lim')
+    if email_pass:
+        config_copy = mail_config
+        config_copy['EMAIL_HOST_PASSWORD'] = email_pass
+        mail = EmailsConfig(config=config_copy)
 
-    if(float(last) >= float(0.345)): # forcing floats because it was giving off an error
-        r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+        message = Message(config=mail, html=f'<html><p>{last}</p></html>',
+                        subject=f"Price Warning - ${last}",
+                        mail_from=("Cron Job", "testsmtpwagtail@gmail.com"))
+
+        if(last >= LIM):
+            try:
+                r = message.send(to=("Nick Jordan", "nickjordan289@gmail.com"))
+            except Exception as e:
+                print("Invalid mail settings")
     return jsonify({'last':last})
-
-# All Tasks
-@app.route('/todo/api/v1/tasks', methods=['GET'])
-def get_tasks():
-    return jsonify({})
